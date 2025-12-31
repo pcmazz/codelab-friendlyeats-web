@@ -11,3 +11,22 @@ firebase.initializeApp({
 });
 
 const messaging = firebase.messaging();
+messaging.onBackgroundMessage((payload) => {
+  console.log('[firebase-messaging-sw.js] Background message received:', payload);
+
+  const notificationTitle = payload.notification.title;
+  const notificationOptions = {
+    body: payload.notification.body,
+    icon: '/assets/WithFirebase.png',
+    data: { url: payload.data?.url || '/' } // Example: dynamic redirect URL
+  };
+  return self.registration.showNotification(notificationTitle, notificationOptions);
+});
+self.addEventListener('notificationclick', (event) => {
+  console.log('[firebase-messaging-sw.js] notificationclick event:', event);
+  event.notification.close();
+  // Example: Open the app or a specific URL when clicked
+  event.waitUntil(
+    clients.openWindow('/')
+  );
+});

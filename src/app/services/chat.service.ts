@@ -40,6 +40,7 @@ import {
 } from '@angular/fire/storage';
 import { getToken, Messaging, onMessage } from '@angular/fire/messaging';
 import { Router } from '@angular/router';
+import {SwPush} from '@angular/service-worker'
 type ChatMessage = {
   name: string | null,
   profilePicUrl: string | null,
@@ -71,6 +72,7 @@ export class ChatService {
     this.userSubscription = this.user$.subscribe((aUser: User | null) => {
         this.currentUser = aUser;
     });
+    new Notification('Title', { body: 'Message content' });
   }
 
   // Signs-in Friendly Chat.
@@ -218,7 +220,7 @@ export class ChatService {
       const currentToken = await getToken(this.messaging, {vapidKey: "BK-C0fL0kCZ5q585sebtX_adYqbnQqvCJ-aA-kcdD4avx07itfWwbR6ZxndLgsgfG_0iFgb8Yg6eW13zbh-1LCY"});
       if (currentToken) {
         console.log('Got FCM device token:', currentToken);
-        // Saving the Device Token to Cloud Firestore.
+        new Notification('Title', { body: 'Message content' });
         const tokenRef = doc(this.firestore, 'fcmTokens', currentToken);
         await setDoc(tokenRef, { uid: this.auth.currentUser?.uid });
 
@@ -233,11 +235,33 @@ export class ChatService {
             'message',
             message
           );
+          const notification = new Notification("Hi there!");
+          console.log(
+            'notification',
+            notification
+          );
+          if (message.notification){
+            const notificationTitle = message.notification.title!;
+            const notificationOptions = {
+              body: message.notification.body,
+              icon: message.notification.icon // Optional: add an icon
+            };
+            Notification.requestPermission().then(permission => {
+              console.log(
+                'permission',
+                permission
+              );
+
+              if(permission === "granted"){
+                new Notification(notificationTitle, notificationOptions);
+              }
+            });
+          }
         });
       } else {
         console.log('Failed to get FCM device token:', currentToken);
         // Need to request permissions to show notifications.
-        await this.requestNotificationsPermissions();
+        this.requestNotificationsPermissions();
       }
     } catch(error) {
       console.error('Unable to get messaging token.', error);
