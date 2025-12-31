@@ -1,44 +1,23 @@
-import { inject, Injectable } from '@angular/core';
+import {inject, Injectable} from '@angular/core'
+import {Auth, GoogleAuthProvider, signInWithPopup, signOut, user, User} from '@angular/fire/auth'
+import {Subscription, tap} from 'rxjs'
 import {
-  Auth,
-  authState,
-  signInWithPopup,
-  GoogleAuthProvider,
-  signOut,
-  user,
-  getAuth,
-  User,
-} from '@angular/fire/auth';
-import { map, switchMap, firstValueFrom, filter, Observable, Subscription } from 'rxjs';
-import {
-  doc,
-  docData,
-  DocumentReference,
-  Firestore,
-  getDoc,
-  setDoc,
-  updateDoc,
-  collection,
   addDoc,
-  deleteDoc,
+  collection,
   collectionData,
-  Timestamp,
-  serverTimestamp,
-  query,
-  orderBy,
-  limit,
-  onSnapshot,
   DocumentData,
+  DocumentReference,
   FieldValue,
-} from '@angular/fire/firestore';
-import {
-  Storage,
-  getDownloadURL,
-  ref,
-  uploadBytesResumable,
-} from '@angular/fire/storage';
-import { getToken, Messaging, onMessage } from '@angular/fire/messaging';
-import { Router } from '@angular/router';
+  Firestore,
+  getDocs,
+  limit,
+  orderBy,
+  query,
+  serverTimestamp, updateDoc
+} from '@angular/fire/firestore'
+import {getDownloadURL, ref, Storage, uploadBytesResumable} from '@angular/fire/storage'
+import {Messaging} from '@angular/fire/messaging'
+import {Router} from '@angular/router'
 
 type ChatMessage = {
   name: string | null,
@@ -97,6 +76,8 @@ export class ChatService {
     textMessage: string | null,
     imageUrl: string | null,
   ): Promise<void | DocumentReference<DocumentData>> => {
+    console.log('ChatService - addMessage - textMessage = ', textMessage)
+    console.log('ChatService - addMessage - imageUrl = ', imageUrl)
     // ignore empty messages
     if (!textMessage && !imageUrl) {
       console.log(
@@ -123,11 +104,10 @@ export class ChatService {
     imageUrl && (message.imageUrl = imageUrl);
 
     try {
-      const newMessageRef = await addDoc(
+      return await addDoc(
         collection(this.firestore, "messages"),
         message,
       );
-      return newMessageRef;
     } catch (error) {
       console.error("Error writing new message to Firebase Database", error);
       return;
@@ -143,13 +123,44 @@ export class ChatService {
   loadMessages = () => {
     // Create the query to load the last 12 messages and listen for new ones.
     const recentMessagesQuery = query(collection(this.firestore, 'messages'), orderBy('timestamp', 'desc'), limit(12));
-    // Start listening to the query.
-    return collectionData(recentMessagesQuery);
+    getDocs(recentMessagesQuery).then(data => {
+      console.log('ChatService - recentMessagesQuery = ', data.docs)
+    })
+    return collectionData(recentMessagesQuery).pipe(
+      tap({
+        next: data => {
+          console.log('ChatService - collectionData = ', data)
+        }
+      })
+    );
   }
 
-  // Saves a new message containing an image in Firebase.
-  // This first saves the image in Firebase storage.
-  saveImageMessage = async (file: any) => {};
+// Saves a new message containing an image in Firestore.
+// This first saves the image in Firebase storage.
+  saveImageMessage = async(file: any) => {
+    console.log('ChatService - saveImageMessage - file = ', file)
+    try {
+      // 1 - Add a message with a loading icon that will get updated with the shared image.
+      const messageRef = await this.addMessage(null, this.LOADING_IMAGE_URL);
+
+      // 2 - Upload the image to Cloud Storage.
+      const filePath = `${this.auth.currentUser?.uid}/${file.name}`;
+      const newImageRef = ref(this.storage, filePath);
+      const fileSnapshot = await uploadBytesResumable(newImageRef, file);
+
+      // 3 - Generate a public URL for the file.
+      const publicImageUrl = await getDownloadURL(newImageRef);
+      console.log('ChatService - saveImageMessage - publicImageUrl = ', publicImageUrl)
+      // 4 - Update the chat message placeholder with the image's URL.
+      messageRef ?
+        await updateDoc(messageRef, {
+          imageUrl: publicImageUrl,
+          storageUri: fileSnapshot.metadata.fullPath
+        }): null;
+    } catch (error) {
+      console.error('There was an error uploading a file to Cloud Storage:', error);
+    }
+  }
 
   async updateData(path: string, data: any) {}
 

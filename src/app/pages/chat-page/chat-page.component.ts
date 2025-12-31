@@ -19,7 +19,9 @@ export class ChatPageComponent {
   text = '';
 
   sendTextMessage() {
-    this.chatService.saveTextMessage(this.text);
+    this.chatService.saveTextMessage(this.text).then(ref => {
+      console.log('ChatPageComponent - sendTextMessage - ref = ', ref)
+    });
     this.text = '';
   }
 
@@ -28,6 +30,6 @@ export class ChatPageComponent {
     if (!imgFile) {
       return;
     }
-    this.chatService.saveImageMessage(imgFile);
+    this.chatService.saveImageMessage(imgFile).then();
   }
 }
