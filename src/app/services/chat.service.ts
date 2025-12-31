@@ -215,7 +215,7 @@ export class ChatService {
   // Saves the messaging device token to Cloud Firestore.
   saveMessagingDeviceToken= async () => {
     try {
-      const currentToken = await getToken(this.messaging);
+      const currentToken = await getToken(this.messaging, {vapidKey: "BK-C0fL0kCZ5q585sebtX_adYqbnQqvCJ-aA-kcdD4avx07itfWwbR6ZxndLgsgfG_0iFgb8Yg6eW13zbh-1LCY"});
       if (currentToken) {
         console.log('Got FCM device token:', currentToken);
         // Saving the Device Token to Cloud Firestore.
@@ -231,8 +231,9 @@ export class ChatService {
           );
         });
       } else {
+        console.log('Failed to get FCM device token:', currentToken);
         // Need to request permissions to show notifications.
-        this.requestNotificationsPermissions();
+        await this.requestNotificationsPermissions();
       }
     } catch(error) {
       console.error('Unable to get messaging token.', error);
