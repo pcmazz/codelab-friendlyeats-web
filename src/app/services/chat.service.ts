@@ -1,24 +1,45 @@
-import {inject, Injectable} from '@angular/core'
-import {Auth, GoogleAuthProvider, signInWithPopup, signOut, user, User} from '@angular/fire/auth'
-import {Subscription, tap} from 'rxjs'
+import { inject, Injectable } from '@angular/core';
 import {
-  addDoc,
-  collection,
-  collectionData,
-  DocumentData,
+  Auth,
+  authState,
+  signInWithPopup,
+  GoogleAuthProvider,
+  signOut,
+  user,
+  getAuth,
+  User,
+} from '@angular/fire/auth';
+import {map, switchMap, firstValueFrom, filter, Observable, Subscription, tap} from 'rxjs'
+import {
+  doc,
+  docData,
   DocumentReference,
-  FieldValue,
   Firestore,
-  getDocs,
-  limit,
-  orderBy,
+  getDoc,
+  setDoc,
+  updateDoc,
+  collection,
+  addDoc,
+  deleteDoc,
+  collectionData,
+  Timestamp,
+  serverTimestamp,
   query,
-  serverTimestamp, updateDoc
-} from '@angular/fire/firestore'
-import {getDownloadURL, ref, Storage, uploadBytesResumable} from '@angular/fire/storage'
-import {Messaging} from '@angular/fire/messaging'
-import {Router} from '@angular/router'
-
+  orderBy,
+  limit,
+  onSnapshot,
+  DocumentData,
+  FieldValue,
+  getDocs,
+} from '@angular/fire/firestore';
+import {
+  Storage,
+  getDownloadURL,
+  ref,
+  uploadBytesResumable,
+} from '@angular/fire/storage';
+import { getToken, Messaging, onMessage } from '@angular/fire/messaging';
+import { Router } from '@angular/router';
 type ChatMessage = {
   name: string | null,
   profilePicUrl: string | null,
