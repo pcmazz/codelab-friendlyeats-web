@@ -229,6 +229,10 @@ export class ChatService {
             'New foreground notification from Firebase Messaging!',
             message.notification
           );
+          console.log(
+            'message',
+            message
+          );
         });
       } else {
         console.log('Failed to get FCM device token:', currentToken);
